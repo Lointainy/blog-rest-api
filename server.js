@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 
 const connectDB = require('./config/connectDB');
 
+const authRoutes = require('./routes/auth');
+
 const app = express();
 
 dotenv.config();
@@ -37,6 +39,8 @@ app.use(express.urlencoded({ extended: false }));
 app.get('/', (req, res) => {
 	res.send('Hello world');
 });
+
+app.use('/api/auth', authRoutes);
 
 const startServer = async () => {
 	try {
