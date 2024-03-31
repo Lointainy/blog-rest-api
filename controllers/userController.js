@@ -1,11 +1,12 @@
-const { getUserByEmail } = require('../data/user');
-const { getVerificationTokenByToken } = require('../data/verification-token');
-const { generateVerificationToken } = require('../lib/tokens');
 const db = require('../prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
 const { v4: uuidv4 } = require('uuid');
+
+const { getUserByEmail } = require('../data/user');
+const { getVerificationTokenByToken } = require('../data/verification-token');
+const { generateVerificationToken, generateTwoFactorToken } = require('../lib/tokens');
+const { getTwoFactorTokenByEmail, getTwoFactorConfirmationByUserId } = require('../data/two-factor-token');
 
 const genereteAccessToken = (id) => {
 	const payload = {
@@ -15,7 +16,7 @@ const genereteAccessToken = (id) => {
 };
 
 const login = async (req, res) => {
-	const { email, password } = req.body;
+	const { email, password, code } = req.body;
 
 	try {
 		const existingUser = await getUserByEmail(email);
@@ -28,6 +29,48 @@ const login = async (req, res) => {
 
 		if (!passwordsMatch) {
 			return res.status(400).json({ error: 'Password is not match ' });
+		}
+
+		if (existingUser.isTwoFactorEnabled && existingUser.email) {
+			if (code) {
+				const twoFactorToken = await getTwoFactorTokenByEmail(existingUser.email);
+
+				if (!twoFactorToken) {
+					return res.status(400).json({ error: 'Invalid code!' });
+				}
+
+				if (twoFactorToken.token !== code) {
+					return res.status(400).json({ error: 'Invalid code' });
+				}
+
+				const hasExpired = new Date(twoFactorToken.expires) < new Date();
+
+				if (hasExpired) {
+					return res.status(400).json({ error: 'Code expired' });
+				}
+
+				await db.twoFactorToken.delete({
+					where: { id: twoFactorToken.id }
+				});
+
+				const existingConfirmation = await getTwoFactorConfirmationByUserId(existingUser.id);
+
+				if (existingConfirmation) {
+					await db.twoFactorConfirmation.delete({
+						where: { id: existingConfirmation.id }
+					});
+				}
+
+				await db.twoFactorConfirmation.create({
+					data: {
+						userId: existingUser.id
+					}
+				});
+			} else {
+				const twoFactorToken = await generateTwoFactorToken(existingUser.email);
+
+				return res.status(200).json({ twoFactorToken: twoFactorToken.token, twoFactor: true, message: 'Token is created' });
+			}
 		}
 
 		const token = genereteAccessToken(existingUser.id);
