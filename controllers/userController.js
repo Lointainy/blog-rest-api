@@ -8,6 +8,28 @@ const { getVerificationTokenByToken } = require('../data/verification-token');
 const { generateVerificationToken, generateTwoFactorToken } = require('../lib/tokens');
 const { getTwoFactorTokenByEmail, getTwoFactorConfirmationByUserId } = require('../data/two-factor-token');
 
+/*
+	DOC:
+
+	ERROR type
+		errorEmailNotExist
+		errorPasswordIsNotMatch
+		errorInvalidCode
+		errorExpiredCode
+		errorUserIsExist
+		errorLogin
+		errorRegister
+		errorTokenIsNotExist
+		errorExpiredToken
+		errorEmailVerification
+
+	SUCCESS type
+		successTokenCreated
+		successUserLogin
+		successUserRegister
+		successEmailVerified
+*/
+
 const genereteAccessToken = (id) => {
 	const payload = {
 		id
@@ -22,13 +44,13 @@ const login = async (req, res) => {
 		const existingUser = await getUserByEmail(email);
 
 		if (!existingUser || !existingUser.email || !existingUser.password) {
-			return res.status(400).json({ error: 'Email does not exist!' });
+			return res.status(400).json({ error: 'errorEmailNotExist' });
 		}
 
 		const passwordsMatch = await bcrypt.compare(password, existingUser.password);
 
 		if (!passwordsMatch) {
-			return res.status(400).json({ error: 'Password is not match ' });
+			return res.status(400).json({ error: 'errorPasswordIsNotMatch' });
 		}
 
 		if (existingUser.isTwoFactorEnabled && existingUser.email) {
@@ -36,17 +58,17 @@ const login = async (req, res) => {
 				const twoFactorToken = await getTwoFactorTokenByEmail(existingUser.email);
 
 				if (!twoFactorToken) {
-					return res.status(400).json({ error: 'Invalid code!' });
+					return res.status(400).json({ error: 'errorInvalidCode' });
 				}
 
 				if (twoFactorToken.token !== code) {
-					return res.status(400).json({ error: 'Invalid code' });
+					return res.status(400).json({ error: 'errorInvalidCode' });
 				}
 
 				const hasExpired = new Date(twoFactorToken.expires) < new Date();
 
 				if (hasExpired) {
-					return res.status(400).json({ error: 'Code expired' });
+					return res.status(400).json({ error: 'errorExpiredCode' });
 				}
 
 				await db.twoFactorToken.delete({
@@ -69,7 +91,7 @@ const login = async (req, res) => {
 			} else {
 				const twoFactorToken = await generateTwoFactorToken(existingUser.email);
 
-				return res.status(200).json({ twoFactorToken: twoFactorToken.token, twoFactor: true, message: 'Token is created' });
+				return res.status(200).json({ twoFactorToken: twoFactorToken.token, twoFactor: true, message: 'successTokenCreated' });
 			}
 		}
 
@@ -77,9 +99,9 @@ const login = async (req, res) => {
 
 		delete existingUser.password;
 
-		return res.status(201).json({ token, success: true, message: 'User is login', user: existingUser });
+		return res.status(201).json({ token, success: true, message: 'successUserLogin', user: existingUser });
 	} catch (error) {
-		return res.status(500).json({ success: false, error: 'Problem with register' });
+		return res.status(500).json({ success: false, error: 'errorLogin' });
 	}
 };
 
@@ -90,7 +112,7 @@ const register = async (req, res) => {
 		const existingUser = await getUserByEmail(email);
 
 		if (existingUser) {
-			return res.status(400).json({ success: false, error: 'User is exist' });
+			return res.status(400).json({ success: false, error: 'errorUserIsExist' });
 		}
 
 		const hashedPassword = await bcrypt.hash(password, 10);
@@ -111,9 +133,9 @@ const register = async (req, res) => {
 
 		return res
 			.status(201)
-			.json({ verificationToken: verificationToken.token, success: true, message: 'User is registered', user: newUser });
+			.json({ verificationToken: verificationToken.token, success: true, message: 'successUserRegister', user: newUser });
 	} catch (error) {
-		return res.status(500).json({ success: false, error: 'Problem with register' });
+		return res.status(500).json({ success: false, error: 'errorRegister' });
 	}
 };
 
@@ -124,19 +146,19 @@ const verifyEmail = async (req, res) => {
 		const existingToken = await getVerificationTokenByToken(token);
 
 		if (!existingToken) {
-			return res.status(400).json({ success: false, error: 'Token is not exist' });
+			return res.status(400).json({ success: false, error: 'errorTokenIsNotExist' });
 		}
 
 		const hasExpired = new Date(existingToken.expires) < new Date();
 
 		if (hasExpired) {
-			return res.status(400).json({ success: false, error: 'Token has expired' });
+			return res.status(400).json({ success: false, error: 'errorExpiredToken' });
 		}
 
 		const existingUser = await getUserByEmail(existingToken.email);
 
 		if (!existingUser) {
-			return res.status(400).json({ success: false, error: 'User is exist' });
+			return res.status(400).json({ success: false, error: 'errorUserIsExist' });
 		}
 
 		await db.user.update({
@@ -151,9 +173,9 @@ const verifyEmail = async (req, res) => {
 			where: { id: existingToken.id }
 		});
 
-		return res.status(200).json({ success: true, message: 'Email verified' });
+		return res.status(200).json({ success: true, message: 'successEmailVerified' });
 	} catch (error) {
-		return res.status(500).json({ success: false, error: 'Problem with verification' });
+		return res.status(500).json({ success: false, error: 'errorEmailVerification' });
 	}
 };
 
