@@ -8,28 +8,6 @@ const { getVerificationTokenByToken } = require('../data/verification-token');
 const { generateVerificationToken, generateTwoFactorToken } = require('../lib/tokens');
 const { getTwoFactorTokenByEmail, getTwoFactorConfirmationByUserId } = require('../data/two-factor-token');
 
-/*
-	DOC:
-
-	ERROR type
-		errorEmailNotExist
-		errorPasswordIsNotMatch
-		errorInvalidCode
-		errorExpiredCode
-		errorUserIsExist
-		errorLogin
-		errorRegister
-		errorTokenIsNotExist
-		errorExpiredToken
-		errorEmailVerification
-
-	SUCCESS type
-		successTokenCreated
-		successUserLogin
-		successUserRegister
-		successEmailVerified
-*/
-
 const genereteAccessToken = (id) => {
 	const payload = {
 		id
@@ -45,6 +23,12 @@ const login = async (req, res) => {
 
 		if (!existingUser || !existingUser.email || !existingUser.password) {
 			return res.status(400).json({ error: 'errorEmailNotExist' });
+		}
+
+		if (!existingUser.emailVerified) {
+			const verificationToken = await generateVerificationToken(email);
+
+			return res.status(201).json({ verificationToken: verificationToken.token, success: 'successEmailVerificationTokenCreated' });
 		}
 
 		const passwordsMatch = await bcrypt.compare(password, existingUser.password);
@@ -131,7 +115,9 @@ const register = async (req, res) => {
 			}
 		});
 
-		return res.status(201).json({ verificationToken: verificationToken.token, success: 'successUserRegister', user: newUser });
+		return res
+			.status(201)
+			.json({ verificationToken: verificationToken.token, success: 'successEmailVerificationTokenCreated', user: newUser });
 	} catch (error) {
 		return res.status(500).json({ error: 'errorRegister' });
 	}
