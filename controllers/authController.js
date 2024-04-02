@@ -2,11 +2,13 @@ const db = require('../prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
+const z = require('zod');
 
 const { getUserByEmail } = require('../data/user');
 const { getVerificationTokenByToken } = require('../data/verification-token');
 const { generateVerificationToken, generateTwoFactorToken } = require('../lib/tokens');
 const { getTwoFactorTokenByEmail, getTwoFactorConfirmationByUserId } = require('../data/two-factor-token');
+const { loginSchema, registerSchema } = require('../schemas');
 
 const genereteAccessToken = (id) => {
 	const payload = {
@@ -18,7 +20,13 @@ const genereteAccessToken = (id) => {
 const login = async (req, res) => {
 	const { email, password, code } = req.body;
 
+	if (!email || !password) {
+		return res.status(400).json({ error: 'errorEmptyFields' });
+	}
+
 	try {
+		const validateData = loginSchema.parse({ email, password, code });
+
 		const existingUser = await getUserByEmail(email);
 
 		if (!existingUser || !existingUser.email || !existingUser.password) {
@@ -85,6 +93,10 @@ const login = async (req, res) => {
 
 		return res.status(201).json({ token, success: 'successUserLogin', user: existingUser });
 	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+		}
+		console.log(error);
 		return res.status(500).json({ error: 'errorLogin' });
 	}
 };
@@ -92,7 +104,13 @@ const login = async (req, res) => {
 const register = async (req, res) => {
 	const { email, password, name } = req.body;
 
+	if (!email || !password || !name) {
+		return res.status(400).json({ error: 'errorEmptyField' });
+	}
+
 	try {
+		const validateData = registerSchema.parse({ email, password, name });
+
 		const existingUser = await getUserByEmail(email);
 
 		if (existingUser) {
@@ -119,12 +137,19 @@ const register = async (req, res) => {
 			.status(201)
 			.json({ verificationToken: verificationToken.token, success: 'successEmailVerificationTokenCreated', user: newUser });
 	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+		}
 		return res.status(500).json({ error: 'errorRegister' });
 	}
 };
 
 const verifyEmail = async (req, res) => {
 	const { token } = req.body;
+
+	if (!token) {
+		return res.status(400).json({ error: 'errorEmptyField' });
+	}
 
 	try {
 		const existingToken = await getVerificationTokenByToken(token);

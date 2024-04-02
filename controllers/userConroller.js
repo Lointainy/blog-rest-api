@@ -1,8 +1,11 @@
 const db = require('../prisma');
 const bcrypt = require('bcryptjs');
+const z = require('zod');
+
 const { getUserById, getUserByEmail } = require('../data/user');
 const { generateVerificationToken, generateResetPasswordToken } = require('../lib/tokens');
 const { getResetPasswordTokenByToken } = require('../data/password-reset-token');
+const { newPasswordSchema, emailSchema, resetPasswordConfirmSchema, newEmailSchema } = require('../schemas');
 
 const getUserProfile = async (req, res) => {
 	const user = req.user;
@@ -20,6 +23,11 @@ const getUserProfile = async (req, res) => {
 
 const getUserProfileById = async (req, res) => {
 	const { id } = req.params;
+
+	if (!id) {
+		return res.status(400).json({ error: 'errorEmptyField' });
+	}
+
 	try {
 		const existingUser = await db.user.findUnique({
 			where: {
@@ -51,7 +59,6 @@ const updateUserProfile = async (req, res) => {
 
 		if (values.email && values.email !== user.email) {
 			if (existingUser && existingUser.id !== user.id) {
-				console.log(existingUser.id, user.id);
 				return res.status(400).json({ error: 'errorEmailIsAlredyUsed' });
 			}
 
@@ -83,7 +90,6 @@ const updateUserProfile = async (req, res) => {
 
 		return res.status(200).json({ success: 'successUserUpdated' });
 	} catch (error) {
-		console.log(error);
 		return res.status(500).json({ error: 'errorUpdateUser' });
 	}
 };
@@ -101,8 +107,6 @@ const deleteUserProfile = async (req, res) => {
 
 		return res.status(200).json({ message: 'successUserDeleted' });
 	} catch (error) {
-		console.log(error);
-
 		return res.status(500).json({ error: 'errorDeleteUser' });
 	}
 };
@@ -124,7 +128,6 @@ const getUsers = async (req, res) => {
 
 		return res.status(200).json({ success: 'successUsers', users });
 	} catch (error) {
-		console.log(error);
 		return res.status(500).json({ error: 'errorUsers' });
 	}
 };
@@ -133,13 +136,23 @@ const newPassword = async (req, res) => {
 	const id = req.user.id;
 	const { password, newPassword } = req.body;
 
+	if (!password || !newPassword) {
+		return res.status(400).json({ error: 'errorEmptyField' });
+	}
+
 	const existingUser = await getUserById(id);
 
 	if (!existingUser) {
 		return res.status(400).json({ error: 'errorUserIsNotExist' });
 	}
 
+	if (!password || !newPassword) {
+		return res.status(400).json({ error: 'errorEmptyField' });
+	}
+
 	try {
+		const validateData = newPasswordSchema.parse({ password, newPassword });
+
 		if (password && newPassword && existingUser.password) {
 			const passwordMatch = await bcrypt.compare(password, existingUser.password);
 
@@ -161,6 +174,9 @@ const newPassword = async (req, res) => {
 			return res.status(200).json({ success: 'Password is updated' });
 		}
 	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+		}
 		return res.status(500).json({ error: 'errorNewPassword' });
 	}
 };
@@ -168,7 +184,13 @@ const newPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
 	const { email } = req.body;
 
+	if (!email) {
+		return res.status(400).json({ error: 'errorEmptyField' });
+	}
+
 	try {
+		const validateData = emailSchema.parse(email);
+
 		const existingUser = getUserByEmail(email);
 
 		if (!existingUser) {
@@ -179,7 +201,9 @@ const resetPassword = async (req, res) => {
 
 		return res.status(201).json({ resetPasswordToken: resetPasswordToken.token, success: 'successResetPasswordTokenIsCreated' });
 	} catch (error) {
-		console.log(error);
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+		}
 		return res.status(500).json({ error: 'errorResetPassword' });
 	}
 };
@@ -187,51 +211,70 @@ const resetPassword = async (req, res) => {
 const resetPasswordConfirm = async (req, res) => {
 	const { token, newPassword } = req.body;
 
-	const existingToken = await getResetPasswordTokenByToken(token);
-
-	if (!existingToken) {
-		return res.status(400).json({ error: 'errorTokenIsNotExist' });
+	if (!token || !newPassword) {
+		return res.status(400).json({ error: 'errorEmptyField' });
 	}
 
-	const hasExpired = new Date(existingToken.expires) < new Date();
+	try {
+		const validateData = resetPasswordConfirmSchema.parse({ token, newPassword });
 
-	const existingUser = await getUserByEmail(existingToken.email);
+		const existingToken = await getResetPasswordTokenByToken(token);
 
-	if (!existingUser) {
-		return res.status(400).json({ error: 'errorUserIsExist' });
-	}
-
-	await db.resetPasswordToken.delete({
-		where: { id: existingToken.id }
-	});
-
-	const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-	await db.user.update({
-		where: { id: existingUser.id },
-		data: {
-			password: hashedPassword
+		if (!existingToken) {
+			return res.status(400).json({ error: 'errorTokenIsNotExist' });
 		}
-	});
 
-	return res.status(200).json({ success: 'successNewPasswordUpdated' });
+		const hasExpired = new Date(existingToken.expires) < new Date();
+
+		const existingUser = await getUserByEmail(existingToken.email);
+
+		if (!existingUser) {
+			return res.status(400).json({ error: 'errorUserIsExist' });
+		}
+
+		await db.resetPasswordToken.delete({
+			where: { id: existingToken.id }
+		});
+
+		const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+		await db.user.update({
+			where: { id: existingUser.id },
+			data: {
+				password: hashedPassword
+			}
+		});
+
+		return res.status(200).json({ success: 'successNewPasswordUpdated' });
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+		}
+		return res.status(500).json({ error: 'errorResetPassword' });
+	}
 };
 
 const newEmail = async (req, res) => {
 	const user = req.user;
 	const { email, newEmail } = req.body;
 
-	if (user.email !== email) {
-		return res.status(400).json({ error: 'errorEmailIsNotMatch' });
-	}
-
-	const existingUser = await getUserByEmail(newEmail);
-
-	if (existingUser && existingUser.email === newEmail) {
-		return res.status(400).json({ error: 'errorEmailIsAlredyUsed' });
+	if (!email || !newEmail) {
+		return res.status(400).json({ error: 'errorEmptyField' });
 	}
 
 	try {
+		const validateData = newEmailSchema.parse({ email, newEmail });
+
+		if (user.email !== email) {
+			return res.status(400).json({ error: 'errorEmailIsNotMatch' });
+		}
+
+		const existingUser = await getUserByEmail(newEmail);
+
+		if (existingUser && existingUser.email === newEmail) {
+			return res.status(400).json({ error: 'errorEmailIsAlredyUsed' });
+		}
+
 		if (email && newEmail) {
 			await db.user.update({
 				where: {
@@ -246,7 +289,9 @@ const newEmail = async (req, res) => {
 			return res.status(200).json({ success: 'successNewEmail' });
 		}
 	} catch (error) {
-		console.log(error);
+		if (error instanceof z.ZodError) {
+			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+		}
 		return res.status(500).json({ error: 'errorNewEmail' });
 	}
 };
