@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/connectDB');
 
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 
 const startServer = async () => {
 	try {
