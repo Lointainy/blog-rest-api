@@ -31,7 +31,7 @@ const createPost = async (req, res) => {
 		if (error instanceof z.ZodError) {
 			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
 		}
-		return res.status(500).json({ error: 'errorPostCreated' });
+		return res.status(500).json({ error: 'errorPostCreate' });
 	}
 };
 
@@ -87,7 +87,7 @@ const deletePost = async (req, res) => {
 		});
 
 		if (!deletedPost) {
-			return res.status(400).json({ error: 'errorUserIsNotExist' });
+			return res.status(400).json({ error: 'errorPostIsNotExist' });
 		}
 
 		return res.status(200).json({ message: 'successPostDeleted' });
