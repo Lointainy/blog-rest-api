@@ -8,7 +8,7 @@ const { getUserByEmail } = require('../data/user');
 const { getVerificationTokenByToken } = require('../data/verification-token');
 const { generateVerificationToken, generateTwoFactorToken } = require('../lib/tokens');
 const { getTwoFactorTokenByEmail, getTwoFactorConfirmationByUserId } = require('../data/two-factor-token');
-const { loginSchema, registerSchema } = require('../schemas');
+const { authValidation } = require('../schemas');
 
 const genereteAccessToken = (id) => {
 	const payload = {
@@ -25,7 +25,7 @@ const login = async (req, res) => {
 	}
 
 	try {
-		const validateData = loginSchema.parse({ email, password, code });
+		const validateData = authValidation.loginSchema.parse({ email, password, code });
 
 		const existingUser = await getUserByEmail(email);
 
@@ -109,7 +109,7 @@ const register = async (req, res) => {
 	}
 
 	try {
-		const validateData = registerSchema.parse({ email, password, name });
+		const validateData = authValidation.registerSchema.parse({ email, password, name });
 
 		const existingUser = await getUserByEmail(email);
 

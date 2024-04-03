@@ -5,7 +5,7 @@ const z = require('zod');
 const { getUserById, getUserByEmail } = require('../data/user');
 const { generateVerificationToken, generateResetPasswordToken } = require('../lib/tokens');
 const { getResetPasswordTokenByToken } = require('../data/password-reset-token');
-const { newPasswordSchema, emailSchema, resetPasswordConfirmSchema, newEmailSchema } = require('../schemas');
+const { userValidation, authValidation } = require('../schemas');
 
 const getUserProfile = async (req, res) => {
 	const user = req.user;
@@ -146,12 +146,8 @@ const newPassword = async (req, res) => {
 		return res.status(400).json({ error: 'errorUserIsNotExist' });
 	}
 
-	if (!password || !newPassword) {
-		return res.status(400).json({ error: 'errorEmptyField' });
-	}
-
 	try {
-		const validateData = newPasswordSchema.parse({ password, newPassword });
+		const validateData = userValidation.newPasswordSchema.parse({ password, newPassword });
 
 		if (password && newPassword && existingUser.password) {
 			const passwordMatch = await bcrypt.compare(password, existingUser.password);
@@ -189,7 +185,7 @@ const resetPassword = async (req, res) => {
 	}
 
 	try {
-		const validateData = emailSchema.parse(email);
+		const validateData = authValidation.emailSchema.parse(email);
 
 		const existingUser = getUserByEmail(email);
 
@@ -216,7 +212,7 @@ const resetPasswordConfirm = async (req, res) => {
 	}
 
 	try {
-		const validateData = resetPasswordConfirmSchema.parse({ token, newPassword });
+		const validateData = userValidation.resetPasswordConfirmSchema.parse({ token, newPassword });
 
 		const existingToken = await getResetPasswordTokenByToken(token);
 
@@ -263,7 +259,7 @@ const newEmail = async (req, res) => {
 	}
 
 	try {
-		const validateData = newEmailSchema.parse({ email, newEmail });
+		const validateData = userValidation.newEmailSchema.parse({ email, newEmail });
 
 		if (user.email !== email) {
 			return res.status(400).json({ error: 'errorEmailIsNotMatch' });
@@ -292,6 +288,7 @@ const newEmail = async (req, res) => {
 		if (error instanceof z.ZodError) {
 			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
 		}
+		console.log(error);
 		return res.status(500).json({ error: 'errorNewEmail' });
 	}
 };
