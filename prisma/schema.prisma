@@ -18,24 +18,18 @@ enum UserRole {
   USER
 }
 
-model Post {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  title  String
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id])
-}
-
 model User {
   id                    String                 @id @default(auto()) @map("_id") @db.ObjectId
-  name                  String?
+  name                  String
   email                 String                 @unique
   emailVerified         DateTime?
-  password              String?
+  password              String
   image                 String?
   role                  UserRole               @default(USER)
   isTwoFactorEnabled    Boolean                @default(false)
-  posts                 Post[]
   TwoFactorConfirmation TwoFactorConfirmation?
+  posts                 Post[]
+  comments              Comment[]
 }
 
 model VerificationToken {
@@ -72,4 +66,32 @@ model ResetPasswordToken {
   expires DateTime
 
   @@unique([email, token])
+}
+
+model Post {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  content    String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  views      Int       @default(0)
+  likes      Int       @default(0)
+  comments   Comment[]
+  published  Boolean   @default(false)
+  tags       String[]
+  image      String?
+  author     User      @relation(fields: [authorId], references: [id])
+  authorId   String    @db.ObjectId
+  authorName String
+}
+
+model Comment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  content    String
+  createdAt  DateTime @default(now())
+  author     User     @relation(fields: [authorId], references: [id])
+  authorId   String   @db.ObjectId
+  authorName String
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     String   @db.ObjectId
 }
