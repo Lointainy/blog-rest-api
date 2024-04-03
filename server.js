@@ -4,9 +4,6 @@ const dotenv = require('dotenv');
 
 const connectDB = require('./config/connectDB');
 
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/user');
-
 const app = express();
 
 dotenv.config();
@@ -41,8 +38,9 @@ app.get('/', (req, res) => {
 	res.send('Hello world');
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/user', require('./routes/user'));
+app.use('/api/post', require('./routes/posts'));
 
 const startServer = async () => {
 	try {
