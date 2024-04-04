@@ -46,5 +46,31 @@ const like = async (req, res) => {
 	}
 };
 
-module.exports = { like };
+const getLikeManyByPostId = async (req, res) => {
+	const { postId } = req.params;
+
+	const existingPost = await getPostById(postId);
+
+	if (!existingPost) {
+		return res.status(400).json({ error: 'errorPostIsNotExist' });
+	}
+
+	try {
+		const likes = await db.like.findMany({
+			where: {
+				postId
+			}
+		});
+
+		if (!likes || !likes.length) {
+			return res.status(400).json({ message: 'errorLikeIsNotExist' });
+		}
+
+		return res.status(200).json({ message: 'successLikes', likes });
+	} catch (error) {
+		return res.status(500).json({ error: 'errorLikes' });
+	}
+};
+
+module.exports = { like, getLikeManyByPostId };
 
