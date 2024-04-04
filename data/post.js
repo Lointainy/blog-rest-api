@@ -6,7 +6,7 @@ const getPostById = async (id) => {
 			where: {
 				id
 			},
-			include: { comments: true }
+			include: { comments: true, likes: true }
 		});
 		return post;
 	} catch {
