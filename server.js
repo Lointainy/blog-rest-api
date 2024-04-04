@@ -41,6 +41,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/post', require('./routes/posts'));
+app.use('/api/comment', require('./routes/comment'));
 
 const startServer = async () => {
 	try {

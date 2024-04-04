@@ -5,7 +5,8 @@ const getPostById = async (id) => {
 		const post = await db.post.findUnique({
 			where: {
 				id
-			}
+			},
+			include: { comments: true }
 		});
 		return post;
 	} catch {
