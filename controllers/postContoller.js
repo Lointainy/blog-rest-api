@@ -73,7 +73,7 @@ const updatePost = async (req, res) => {
 const deletePost = async (req, res) => {
 	const { id } = req.params;
 
-	const existingPost = getPostById(id);
+	const existingPost = await getPostById(id);
 
 	if (!existingPost) {
 		return res.status(400).json({ error: 'errorPostIsNotExist' });
