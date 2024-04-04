@@ -5,6 +5,32 @@ const { getPostById } = require('../data/post');
 const { commentValidation } = require('../schemas');
 const { getCommentById } = require('../data/comment');
 
+const getCommentManyByPostId = async (req, res) => {
+	const { postId } = req.params;
+
+	const existingPost = await getPostById(postId);
+
+	if (!existingPost) {
+		return res.status(400).json({ error: 'errorPostIsNotExist' });
+	}
+
+	try {
+		const comments = await db.comment.findMany({
+			where: {
+				postId
+			}
+		});
+
+		if (!comments || !comments.length) {
+			return res.status(400).json({ message: 'errorCommentIsNotExist' });
+		}
+
+		return res.status(200).json({ message: 'successCommets', comments });
+	} catch (error) {
+		return res.status(500).json({ error: 'errorComments' });
+	}
+};
+
 const createComment = async (req, res) => {
 	const { postId } = req.params;
 	const newComment = req.body;
@@ -67,7 +93,7 @@ const deleteComment = async (req, res) => {
 	}
 };
 
-const deleteComments = async (req, res) => {
+const deleteCommentMany = async (req, res) => {
 	const { postId } = req.params;
 
 	const existingPost = await getPostById(postId);
@@ -93,5 +119,5 @@ const deleteComments = async (req, res) => {
 	}
 };
 
-module.exports = { createComment, deleteComment, deleteComments };
+module.exports = { createComment, deleteComment, deleteCommentMany, getCommentManyByPostId };
 
