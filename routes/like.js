@@ -3,12 +3,11 @@ const express = require('express');
 const authMiddleware = require('../middleware/auth');
 const roleMiddleware = require('../middleware/role');
 
-const { addLike, removeLike } = require('../controllers/likeController');
+const { like } = require('../controllers/likeController');
 
 const router = express.Router();
 
-router.post('/:postId', [authMiddleware], addLike);
-router.delete('/:id', [authMiddleware], removeLike);
+router.post('/:postId', [authMiddleware], like);
 
 module.exports = router;
 
