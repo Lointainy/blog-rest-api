@@ -63,7 +63,6 @@ const deleteComment = async (req, res) => {
 
 		return res.status(200).json({ message: 'successCommentDeleted' });
 	} catch (error) {
-		console.log(error);
 		return res.status(500).json({ error: 'errorCommentDelete' });
 	}
 };
@@ -78,8 +77,6 @@ const deleteComments = async (req, res) => {
 	}
 
 	if (!existingPost.comments) {
-		console.log(existingPost);
-
 		return res.status(400).json({ error: 'errorPostHasNoComments' });
 	}
 
