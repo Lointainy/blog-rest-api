@@ -113,14 +113,67 @@ const getPostDetailsById = async (req, res) => {
 };
 
 const getPosts = async (req, res) => {
-	try {
-		const posts = await db.post.findMany({});
+	const { search, page = 1, limit = 10 } = req.query;
 
-		if (!posts || !posts.length) {
+	let postLimit = limit;
+	let currentPage = page;
+	const maxPostPerPage = 50;
+
+	postLimit = parseInt(limit);
+	currentPage = parseInt(page);
+
+	if (isNaN(postLimit) || isNaN(currentPage)) {
+		postLimit = 10;
+		currentPage = 1;
+	}
+
+	if (postLimit > maxPostPerPage) postLimit = maxPostPerPage;
+
+	try {
+		let posts = [],
+			totalCount = 0;
+		const skip = (currentPage - 1) * postLimit;
+
+		if (search) {
+			totalCount = await db.post.count({
+				where: {
+					OR: [{ title: { contains: search, mode: 'insensitive' } }, { content: { contains: search, mode: 'insensitive' } }]
+				}
+			});
+
+			posts = await db.post.findMany({
+				where: {
+					OR: [{ title: { contains: search, mode: 'insensitive' } }, { content: { contains: search, mode: 'insensitive' } }]
+				},
+				take: postLimit,
+				skip,
+				orderBy: {
+					createdAt: 'desc'
+				}
+			});
+		} else {
+			posts = await db.post.findMany({
+				take: postLimit,
+				skip,
+				orderBy: { createdAt: 'desc' }
+			});
+
+			totalCount = await db.post.count();
+		}
+
+		if (!posts || !posts.length || totalCount === 0) {
 			return res.status(404).json({ error: 'errorNoPostsFound' });
 		}
 
-		return res.status(200).json({ success: 'successPosts', posts });
+		const totalPages = Math.ceil(totalCount / postLimit);
+
+		return res.status(200).json({
+			success: 'successPosts',
+			totalCount,
+			totalPages,
+			currentPage,
+			posts
+		});
 	} catch (error) {
 		return res.status(500).json({ error: 'errorPosts' });
 	}
