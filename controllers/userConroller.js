@@ -3,9 +3,12 @@ const bcrypt = require('bcryptjs');
 const z = require('zod');
 
 const { getUserById, getUserByEmail } = require('../data/user');
-const { generateVerificationToken, generateResetPasswordToken } = require('../lib/tokens');
+const { generateResetPasswordToken } = require('../lib/tokens');
 const { getResetPasswordTokenByToken } = require('../data/password-reset-token');
 const { userValidation, authValidation } = require('../schemas');
+const { getCommentCountByUserId } = require('../data/comment');
+const { getPostCountByUserId } = require('../data/post');
+const { getLikeCountByUserId } = require('../data/like');
 
 const getUserProfile = async (req, res) => {
 	const user = req.user;
@@ -13,19 +16,27 @@ const getUserProfile = async (req, res) => {
 	try {
 		delete user.password;
 
-		return res.status(200).json({ success: 'successUserProfile', user });
+		const postsCount = await getPostCountByUserId(user.id);
+
+		const commentsCount = await getCommentCountByUserId(user.id);
+
+		const likesCount = await getLikeCountByUserId(user.id);
+
+		return res.status(200).json({
+			success: 'successUserProfile',
+			user: { ...user, postsCount, commentsCount, likesCount }
+		});
 	} catch (error) {
+		console.log(error);
 		return res.status(500).json({ error: 'errorUser' });
 	}
-
-	return res.status(200).json({ user });
 };
 
 const getUserProfileById = async (req, res) => {
 	const { id } = req.params;
 
 	if (!id) {
-		return res.status(400).json({ error: 'errorEmptyField' });
+		return res.status(405).json({ error: 'errorEmptyField' });
 	}
 
 	try {
@@ -41,7 +52,7 @@ const getUserProfileById = async (req, res) => {
 		});
 
 		if (!existingUser) {
-			return res.status(400).json({ error: 'errorUserIsNotExist' });
+			return res.status(404).json({ error: 'errorUserIsNotExist' });
 		}
 
 		return res.status(200).json({ success: 'successUserProfile', user: existingUser });
@@ -52,44 +63,31 @@ const getUserProfileById = async (req, res) => {
 
 const updateUserProfile = async (req, res) => {
 	const user = req.user;
-	let values = req.body;
+	let { name, isTwoFactorEnabled = user.isTwoFactorEnabled } = req.body;
+
+	if (!name || !name.length || isTwoFactorEnabled === undefined) {
+		return res.status(405).json({ error: 'errorEmptyFields' });
+	}
 
 	try {
-		const existingUser = await getUserByEmail(user.email);
-
-		if (values.email && values.email !== user.email) {
-			if (existingUser && existingUser.id !== user.id) {
-				return res.status(400).json({ error: 'errorEmailIsAlredyUsed' });
-			}
-
-			const verificationToken = await generateVerificationToken(values.email);
-
-			return res.status(200).json({ verificationToken: verificationToken.token, success: 'successEmailVerificationTokenCreated' });
-		}
-
-		if (values.password && values.newPassword && existingUser.password) {
-			const passwordMatch = await bcrypt.compare(values.password, existingUser.password);
-
-			if (!passwordMatch) {
-				return res.status(400).json({ error: 'errorPasswordIsNotMatch' });
-			}
-
-			const hashedPassword = await bcrypt.hash(values.newPassword, 10);
-			values.password = hashedPassword;
-			delete values.newPassword;
-		}
+		const validateData = userValidation.userSchema.parse({ name, isTwoFactorEnabled });
 
 		await db.user.update({
 			where: {
-				id: existingUser.id
+				id: user.id
 			},
 			data: {
-				...values
+				name,
+				isTwoFactorEnabled
 			}
 		});
 
 		return res.status(200).json({ success: 'successUserUpdated' });
 	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return res.status(405).json({ error: 'ValidationError', details: error.errors });
+		}
+		console.log(error);
 		return res.status(500).json({ error: 'errorUpdateUser' });
 	}
 };
@@ -97,16 +95,18 @@ const updateUserProfile = async (req, res) => {
 const deleteUserProfile = async (req, res) => {
 	const id = req.user.id;
 	try {
+		console.log('*****', id);
 		const deletedUser = await db.user.delete({
 			where: { id }
 		});
 
 		if (!deletedUser) {
-			return res.status(400).json({ error: 'errorUserIsNotExist' });
+			return res.status(404).json({ error: 'errorUserIsNotExist' });
 		}
 
 		return res.status(200).json({ message: 'successUserDeleted' });
 	} catch (error) {
+		console.log(error);
 		return res.status(500).json({ error: 'errorDeleteUser' });
 	}
 };
@@ -137,19 +137,23 @@ const newPassword = async (req, res) => {
 	const { password, newPassword } = req.body;
 
 	if (!password || !newPassword) {
-		return res.status(400).json({ error: 'errorEmptyField' });
+		return res.status(405).json({ error: 'errorEmptyField' });
 	}
 
 	const existingUser = await getUserById(id);
 
 	if (!existingUser) {
-		return res.status(400).json({ error: 'errorUserIsNotExist' });
+		return res.status(404).json({ error: 'errorUserIsNotExist' });
 	}
 
 	try {
 		const validateData = userValidation.newPasswordSchema.parse({ password, newPassword });
 
 		if (password && newPassword && existingUser.password) {
+			if (password === newPassword) {
+				return res.status(400).json({ error: 'errorPasswordMatch' });
+			}
+
 			const passwordMatch = await bcrypt.compare(password, existingUser.password);
 
 			if (!passwordMatch) {
@@ -171,7 +175,7 @@ const newPassword = async (req, res) => {
 		}
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
 		return res.status(500).json({ error: 'errorNewPassword' });
 	}
@@ -181,7 +185,7 @@ const resetPassword = async (req, res) => {
 	const { email } = req.body;
 
 	if (!email) {
-		return res.status(400).json({ error: 'errorEmptyField' });
+		return res.status(405).json({ error: 'errorEmptyField' });
 	}
 
 	try {
@@ -190,7 +194,7 @@ const resetPassword = async (req, res) => {
 		const existingUser = getUserByEmail(email);
 
 		if (!existingUser) {
-			return res.status(400).json({ error: 'errorUserIsNotExist' });
+			return res.status(404).json({ error: 'errorUserIsNotExist' });
 		}
 
 		const resetPasswordToken = await generateResetPasswordToken(email);
@@ -198,7 +202,7 @@ const resetPassword = async (req, res) => {
 		return res.status(201).json({ resetPasswordToken: resetPasswordToken.token, success: 'successResetPasswordTokenIsCreated' });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
 		return res.status(500).json({ error: 'errorResetPassword' });
 	}
@@ -208,7 +212,7 @@ const resetPasswordConfirm = async (req, res) => {
 	const { token, newPassword } = req.body;
 
 	if (!token || !newPassword) {
-		return res.status(400).json({ error: 'errorEmptyField' });
+		return res.status(405).json({ error: 'errorEmptyField' });
 	}
 
 	try {
@@ -225,7 +229,7 @@ const resetPasswordConfirm = async (req, res) => {
 		const existingUser = await getUserByEmail(existingToken.email);
 
 		if (!existingUser) {
-			return res.status(400).json({ error: 'errorUserIsExist' });
+			return res.status(404).json({ error: 'errorUserIsExist' });
 		}
 
 		await db.resetPasswordToken.delete({
@@ -244,7 +248,7 @@ const resetPasswordConfirm = async (req, res) => {
 		return res.status(200).json({ success: 'successNewPasswordUpdated' });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
 		return res.status(500).json({ error: 'errorResetPassword' });
 	}
@@ -255,7 +259,7 @@ const newEmail = async (req, res) => {
 	const { email, newEmail } = req.body;
 
 	if (!email || !newEmail) {
-		return res.status(400).json({ error: 'errorEmptyField' });
+		return res.status(405).json({ error: 'errorEmptyField' });
 	}
 
 	try {
@@ -286,7 +290,7 @@ const newEmail = async (req, res) => {
 		}
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
 		return res.status(500).json({ error: 'errorNewEmail' });
 	}
