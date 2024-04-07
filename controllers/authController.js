@@ -21,7 +21,7 @@ const login = async (req, res) => {
 	const { email, password, code } = req.body;
 
 	if (!email || !password) {
-		return res.status(400).json({ error: 'errorEmptyFields' });
+		return res.status(405).json({ error: 'errorEmptyFields' });
 	}
 
 	try {
@@ -83,7 +83,7 @@ const login = async (req, res) => {
 			} else {
 				const twoFactorToken = await generateTwoFactorToken(existingUser.email);
 
-				return res.status(200).json({ twoFactorToken: twoFactorToken.token, twoFactor: 'successTokenCreated' });
+				return res.status(201).json({ twoFactorToken: twoFactorToken.token, twoFactor: 'successTokenCreated' });
 			}
 		}
 
@@ -94,7 +94,7 @@ const login = async (req, res) => {
 		return res.status(201).json({ token, success: 'successUserLogin', user: existingUser });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
 		return res.status(500).json({ error: 'errorLogin' });
 	}
@@ -104,7 +104,7 @@ const register = async (req, res) => {
 	const { email, password, name } = req.body;
 
 	if (!email || !password || !name) {
-		return res.status(400).json({ error: 'errorEmptyField' });
+		return res.status(405).json({ error: 'errorEmptyField' });
 	}
 
 	try {
@@ -137,7 +137,7 @@ const register = async (req, res) => {
 			.json({ verificationToken: verificationToken.token, success: 'successEmailVerificationTokenCreated', user: newUser });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
 		return res.status(500).json({ error: 'errorRegister' });
 	}
@@ -147,7 +147,7 @@ const verifyEmail = async (req, res) => {
 	const { token } = req.body;
 
 	if (!token) {
-		return res.status(400).json({ error: 'errorEmptyField' });
+		return res.status(405).json({ error: 'errorEmptyField' });
 	}
 
 	try {
@@ -166,7 +166,7 @@ const verifyEmail = async (req, res) => {
 		const existingUser = await getUserByEmail(existingToken.email);
 
 		if (!existingUser) {
-			return res.status(400).json({ error: 'errorUserIsExist' });
+			return res.status(404).json({ error: 'errorUserIsExist' });
 		}
 
 		await db.user.update({
