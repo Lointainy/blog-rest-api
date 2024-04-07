@@ -37,6 +37,10 @@ const user = {
 			example: false,
 			description: 'Indicates whether two-factor authentication is enabled for the user.'
 		}
+	},
+	example: {
+		name: 'John Doe',
+		isTwoFactorEnabled: false
 	}
 };
 
