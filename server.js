@@ -1,14 +1,21 @@
 const express = require('express');
 const cors = require('cors');
+const swaggerJSDoc = require('swagger-jsdoc');
+const swaggerUI = require('swagger-ui-express');
 const dotenv = require('dotenv');
 
 const connectDB = require('./config/connectDB');
+const { swaggerOptions, optionDoc } = require('./doc');
 
 const app = express();
 
 dotenv.config();
 
 const PORT = process.env.PORT || 3500;
+
+const swaggerDocs = swaggerJSDoc(swaggerOptions);
+
+app.use('/docs', swaggerUI.serve, swaggerUI.setup(swaggerDocs, optionDoc));
 
 /* Cors */
 
@@ -35,7 +42,7 @@ app.use(express.urlencoded({ extended: false }));
 /* Routes */
 
 app.get('/', (req, res) => {
-	res.send('Hello world');
+	res.redirect('/docs');
 });
 
 app.use('/api/auth', require('./routes/auth'));
