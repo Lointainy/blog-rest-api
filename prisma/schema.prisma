@@ -102,6 +102,7 @@ model Like {
   createdAt  DateTime @default(now())
   authorId   String
   authorName String
+  authorImg  String?
   post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId     String   @db.ObjectId
 
