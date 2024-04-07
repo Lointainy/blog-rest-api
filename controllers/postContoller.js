@@ -113,7 +113,7 @@ const getPostDetailsById = async (req, res) => {
 };
 
 const getPosts = async (req, res) => {
-	const { search, page = 1, limit = 10 } = req.query;
+	const { search, page = 1, limit = 10, authorId } = req.query;
 
 	let postLimit = limit;
 	let currentPage = page;
@@ -137,13 +137,15 @@ const getPosts = async (req, res) => {
 		if (search) {
 			totalCount = await db.post.count({
 				where: {
-					OR: [{ title: { contains: search, mode: 'insensitive' } }, { content: { contains: search, mode: 'insensitive' } }]
+					OR: [{ title: { contains: search, mode: 'insensitive' } }, { content: { contains: search, mode: 'insensitive' } }],
+					authorId
 				}
 			});
 
 			posts = await db.post.findMany({
 				where: {
-					OR: [{ title: { contains: search, mode: 'insensitive' } }, { content: { contains: search, mode: 'insensitive' } }]
+					OR: [{ title: { contains: search, mode: 'insensitive' } }, { content: { contains: search, mode: 'insensitive' } }],
+					authorId
 				},
 				take: postLimit,
 				skip,
@@ -153,12 +155,19 @@ const getPosts = async (req, res) => {
 			});
 		} else {
 			posts = await db.post.findMany({
+				where: {
+					authorId
+				},
 				take: postLimit,
 				skip,
 				orderBy: { createdAt: 'desc' }
 			});
 
-			totalCount = await db.post.count();
+			totalCount = await db.post.count({
+				where: {
+					authorId
+				}
+			});
 		}
 
 		if (!posts || !posts.length || totalCount === 0) {
