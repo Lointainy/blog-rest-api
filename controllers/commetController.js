@@ -58,6 +58,28 @@ const createComment = async (req, res) => {
 			}
 		});
 
+		await db.post.update({
+			where: {
+				id: postId
+			},
+			data: {
+				commentsCount: {
+					increment: 1
+				}
+			}
+		});
+
+		await db.user.update({
+			where: {
+				id: user.id
+			},
+			data: {
+				commentsCount: {
+					increment: 1
+				}
+			}
+		});
+
 		return res.status(201).json({ comment: newCreatedComment, success: 'successCommentCreated' });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
@@ -69,6 +91,7 @@ const createComment = async (req, res) => {
 
 const deleteComment = async (req, res) => {
 	const { id } = req.params;
+	const user = req.user;
 
 	const existingComment = await getCommentById(id);
 
@@ -83,12 +106,24 @@ const deleteComment = async (req, res) => {
 			}
 		});
 
+		await db.post.update({
+			where: {
+				id: existingComment.postId
+			},
+			data: {
+				commentsCount: {
+					decrement: 1
+				}
+			}
+		});
+
 		if (!deleteComment) {
 			return res.status(400).json({ error: 'errorCommentIsNotExist' });
 		}
 
 		return res.status(200).json({ message: 'successCommentDeleted' });
 	} catch (error) {
+		console.log(error);
 		return res.status(500).json({ error: 'errorCommentDelete' });
 	}
 };

@@ -9,7 +9,7 @@ const createPost = async (req, res) => {
 	const user = req.user;
 
 	if (!newPost) {
-		return res.status(400).json({ error: 'errorEmptyPost' });
+		return res.status(405).json({ error: 'errorEmptyPost' });
 	}
 
 	try {
@@ -26,10 +26,21 @@ const createPost = async (req, res) => {
 			}
 		});
 
+		await db.user.update({
+			where: {
+				id: user.id
+			},
+			data: {
+				postsCount: {
+					increment: 1
+				}
+			}
+		});
+
 		return res.status(201).json({ id: newCreatedPost.id, success: 'successPostCreated' });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
 		return res.status(500).json({ error: 'errorPostCreate' });
 	}
@@ -37,16 +48,17 @@ const createPost = async (req, res) => {
 
 const updatePost = async (req, res) => {
 	const { id } = req.params;
+	const user = req.user;
 	const updatedPost = req.body;
 
 	if (!updatedPost) {
-		return res.status(400).json({ error: 'errorEmptyPost' });
+		return res.status(405).json({ error: 'errorEmptyPost' });
 	}
 
 	const existingPost = await getPostById(id);
 
 	if (!existingPost) {
-		return res.status(400).json({ error: 'errorPostIsNotExist' });
+		return res.status(404).json({ error: 'errorPostIsNotExist' });
 	}
 
 	try {
@@ -64,7 +76,7 @@ const updatePost = async (req, res) => {
 		return res.status(201).json({ success: 'successPostUpdated' });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
 		return res.status(500).json({ error: 'errorPostUpdated' });
 	}
@@ -72,11 +84,12 @@ const updatePost = async (req, res) => {
 
 const deletePost = async (req, res) => {
 	const { id } = req.params;
+	const user = req.user;
 
 	const existingPost = await getPostById(id);
 
 	if (!existingPost) {
-		return res.status(400).json({ error: 'errorPostIsNotExist' });
+		return res.status(404).json({ error: 'errorPostIsNotExist' });
 	}
 
 	try {
@@ -86,8 +99,19 @@ const deletePost = async (req, res) => {
 			}
 		});
 
+		await db.user.update({
+			where: {
+				id: user.id
+			},
+			data: {
+				postsCount: {
+					decrement: 1
+				}
+			}
+		});
+
 		if (!deletedPost) {
-			return res.status(400).json({ error: 'errorPostIsNotExist' });
+			return res.status(404).json({ error: 'errorPostIsNotExist' });
 		}
 
 		return res.status(200).json({ message: 'successPostDeleted' });
@@ -103,7 +127,7 @@ const getPostDetailsById = async (req, res) => {
 		const existingPost = await getPostById(id);
 
 		if (!existingPost) {
-			return res.status(400).json({ error: 'errorPostIsNotExist' });
+			return res.status(404).json({ error: 'errorPostIsNotExist' });
 		}
 
 		return res.status(200).json({ message: 'successPost', post: existingPost });

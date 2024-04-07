@@ -16,15 +16,9 @@ const getUserProfile = async (req, res) => {
 	try {
 		delete user.password;
 
-		const postsCount = await getPostCountByUserId(user.id);
-
-		const commentsCount = await getCommentCountByUserId(user.id);
-
-		const likesCount = await getLikeCountByUserId(user.id);
-
 		return res.status(200).json({
 			success: 'successUserProfile',
-			user: { ...user, postsCount, commentsCount, likesCount }
+			user: { ...user }
 		});
 	} catch (error) {
 		console.log(error);

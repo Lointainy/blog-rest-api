@@ -28,6 +28,28 @@ const like = async (req, res) => {
 				}
 			});
 
+			await db.post.update({
+				where: {
+					id: postId
+				},
+				data: {
+					likesCount: {
+						decrement: 1
+					}
+				}
+			});
+
+			await db.user.update({
+				where: {
+					id: user.id
+				},
+				data: {
+					likesCount: {
+						decrement: 1
+					}
+				}
+			});
+
 			return res.status(201).json({ success: 'successLikeRemoved' });
 		}
 
@@ -36,6 +58,28 @@ const like = async (req, res) => {
 				postId,
 				authorId: user.id,
 				authorName: user.name
+			}
+		});
+
+		await db.post.update({
+			where: {
+				id: postId
+			},
+			data: {
+				likesCount: {
+					increment: 1
+				}
+			}
+		});
+
+		await db.user.update({
+			where: {
+				id: user.id
+			},
+			data: {
+				likesCount: {
+					increment: 1
+				}
 			}
 		});
 
