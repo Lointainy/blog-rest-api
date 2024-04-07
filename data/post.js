@@ -13,5 +13,18 @@ const getPostById = async (id) => {
 	}
 };
 
-module.exports = { getPostById };
+const getPostCountByUserId = async (authorId) => {
+	try {
+		const count = await db.post.count({
+			where: {
+				authorId
+			}
+		});
+		return count;
+	} catch {
+		return null;
+	}
+};
+
+module.exports = { getPostById, getPostCountByUserId };
 

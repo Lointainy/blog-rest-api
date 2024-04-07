@@ -13,5 +13,18 @@ const getLikeById = async (id) => {
 	}
 };
 
-module.exports = { getLikeById };
+const getLikeCountByUserId = async (authorId) => {
+	try {
+		const count = await db.like.count({
+			where: {
+				authorId
+			}
+		});
+		return count;
+	} catch {
+		return null;
+	}
+};
+
+module.exports = { getLikeById, getLikeCountByUserId };
 

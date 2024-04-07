@@ -13,5 +13,18 @@ const getCommentById = async (id) => {
 	}
 };
 
-module.exports = { getCommentById };
+const getCommentCountByUserId = async (authorId) => {
+	try {
+		const count = await db.comment.count({
+			where: {
+				authorId
+			}
+		});
+		return count;
+	} catch {
+		return null;
+	}
+};
+
+module.exports = { getCommentById, getCommentCountByUserId };
 
