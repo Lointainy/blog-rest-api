@@ -1,9 +1,9 @@
 const z = require('zod');
 const db = require('../prisma');
 
-const { getPostById } = require('../data/post');
 const { commentValidation } = require('../schemas');
 const { getCommentById } = require('../data/comment');
+const { getPostById } = require('../data/post');
 
 const getCommentManyByPostId = async (req, res) => {
 	const { postId } = req.params;
