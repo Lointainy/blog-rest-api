@@ -95,7 +95,6 @@ const updateUserProfile = async (req, res) => {
 const deleteUserProfile = async (req, res) => {
 	const id = req.user.id;
 	try {
-		console.log('*****', id);
 		const deletedUser = await db.user.delete({
 			where: { id }
 		});
