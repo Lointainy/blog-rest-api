@@ -56,6 +56,7 @@ const like = async (req, res) => {
 		const newLike = await db.like.create({
 			data: {
 				postId,
+				authorImg: user.img,
 				authorId: user.id,
 				authorName: user.name
 			}
