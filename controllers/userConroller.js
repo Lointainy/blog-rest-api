@@ -10,15 +10,40 @@ const { getCommentCountByUserId } = require('../data/comment');
 const { getPostCountByUserId } = require('../data/post');
 const { getLikeCountByUserId } = require('../data/like');
 
+const checkCounts = async (userId) => {
+	if (!userId) {
+		return null;
+	}
+
+	const postsCount = await getPostCountByUserId(userId);
+
+	const commentsCount = await getCommentCountByUserId(userId);
+
+	const likesCount = await getLikeCountByUserId(userId);
+
+	return { postsCount, likesCount, commentsCount };
+};
+
 const getUserProfile = async (req, res) => {
 	const user = req.user;
 
 	try {
-		delete user.password;
+		const counts = await checkCounts(user.id);
+
+		const userProfileDetails = await db.user.update({
+			where: {
+				id: user.id
+			},
+			data: {
+				...counts
+			}
+		});
+
+		delete userProfileDetails.password;
 
 		return res.status(200).json({
 			success: 'successUserProfile',
-			user: { ...user }
+			user: { ...userProfileDetails }
 		});
 	} catch (error) {
 		console.log(error);
