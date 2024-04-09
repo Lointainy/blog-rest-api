@@ -62,14 +62,14 @@ const updatePost = async (req, res) => {
 	}
 
 	try {
-		const validateData = postValidation.partialPostSchema.parseAsync(updatedPost);
+		const validatedData = await postValidation.partialPostSchema.parseAsync(updatedPost);
 
 		await db.post.update({
 			where: {
 				id
 			},
 			data: {
-				...updatedPost
+				...validatedData
 			}
 		});
 
