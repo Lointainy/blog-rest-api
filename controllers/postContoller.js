@@ -62,7 +62,7 @@ const updatePost = async (req, res) => {
 	}
 
 	try {
-		const validatedData = await postValidation.partialPostSchema.parseAsync(updatedPost);
+		const validatedData = await postValidation.postSchema.partial().strict().parseAsync(updatedPost);
 
 		await db.post.update({
 			where: {

@@ -82,31 +82,29 @@ const getUserProfileById = async (req, res) => {
 
 const updateUserProfile = async (req, res) => {
 	const user = req.user;
-	let { name, isTwoFactorEnabled = user.isTwoFactorEnabled } = req.body;
+	let updatedUser = req.body;
 
-	if (!name || !name.length || isTwoFactorEnabled === undefined) {
+	if (!updatedUser) {
 		return res.status(405).json({ error: 'errorEmptyFields' });
 	}
 
 	try {
-		const validateData = userValidation.userSchema.parse({ name, isTwoFactorEnabled });
+		const validatedData = await userValidation.userSchema.partial().strict().parseAsync(updatedUser);
 
 		await db.user.update({
 			where: {
 				id: user.id
 			},
 			data: {
-				name,
-				isTwoFactorEnabled
+				...validatedData
 			}
 		});
 
 		return res.status(200).json({ success: 'successUserUpdated' });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(405).json({ error: 'ValidationError', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
-		console.log(error);
 		return res.status(500).json({ error: 'errorUpdateUser' });
 	}
 };

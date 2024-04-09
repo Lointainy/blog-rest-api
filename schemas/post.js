@@ -10,7 +10,5 @@ const postSchema = z.object({
 	image: z.string().optional()
 });
 
-const partialPostSchema = postSchema.partial().nonstrict();
-
-module.exports = { postSchema, partialPostSchema };
+module.exports = { postSchema };
 
