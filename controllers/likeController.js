@@ -98,7 +98,7 @@ const getLikeMany = async (req, res) => {
 		const existingPost = await getPostById(postId);
 
 		if (!existingPost) {
-			return res.status(400).json({ error: 'errorPostIsNotExist' });
+			return res.status(404).json({ error: 'errorPostIsNotExist' });
 		}
 	}
 
@@ -111,7 +111,7 @@ const getLikeMany = async (req, res) => {
 		});
 
 		if (!likes || !likes.length) {
-			return res.status(400).json({ message: 'errorLikeIsNotExist' });
+			return res.status(404).json({ message: 'errorLikeIsNotExist' });
 		}
 
 		return res.status(200).json({ message: 'successLikes', likes });

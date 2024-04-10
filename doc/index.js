@@ -1,6 +1,7 @@
 const authSchema = require('./schemas/auth');
 const userSchema = require('./schemas/user');
 const postSchema = require('./schemas/post');
+const likeSchema = require('./schemas/like');
 
 const CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css';
 
@@ -45,7 +46,8 @@ const swaggerOptions = {
 				login: authSchema.login,
 				register: authSchema.register,
 				user: userSchema.user,
-				post: postSchema.post
+				post: postSchema.post,
+				like: likeSchema.like
 			},
 			securitySchemes: {
 				bearerAuth: {
