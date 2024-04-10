@@ -15,26 +15,98 @@ router.delete('/:commentId', [authMiddleware], deleteById);
 
 /**
  * @swagger
+ * /comment/{postId}:
+ *   post:
+ *     summary: Create a new comment for a post.
+ *     description: Create a new comment for the specified post.
+ *     tags:
+ *       - Comments
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the post to comment on.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Comment'
+ *     responses:
+ *       '201':
+ *         description: A new comment was created successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Comment'
+ *       '400':
+ *         description: Bad request - Invalid or missing data.
+ *       '404':
+ *         description: Not found - Post with the provided ID does not exist.
+ *       '405':
+ *         description: Method not allowed - Empty comment data.
+ *       '500':
+ *         description: Server error.
+ */
+
+/**
+ * @swagger
+ * /comment/{commentId}:
+ *   put:
+ *     summary: Update a comment by ID.
+ *     description: Update a comment with the provided data.
+ *     tags:
+ *       - Comments
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the comment to update.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Comment'
+ *     responses:
+ *       '201':
+ *         description: The comment was updated successfully.
+ *       '400':
+ *         description: Bad request - Invalid or missing data.
+ *       '404':
+ *         description: Not found - Comment with the provided ID does not exist.
+ *       '405':
+ *         description: Method not allowed - Comment update time limit exceeded.
+ *       '500':
+ *         description: Server error.
+ */
+
+/**
+ * @swagger
  * /comment:
  *   get:
- *     summary: Get comments based on query parameters.
- *     description: Retrieve comments based on search criteria.
+ *     summary: Get a list of comments.
+ *     description: Retrieve a list of comments based on search criteria.
  *     tags:
- *       - Comment
+ *       - Comments
  *     parameters:
  *       - in: query
  *         name: authorId
  *         schema:
  *           type: string
- *         description: Optional. The ID of the comment author.
+ *         description: The ID of the comment author.
  *       - in: query
  *         name: postId
  *         schema:
  *           type: string
- *         description: Optional. The ID of the post to retrieve comments for.
+ *         description: The ID of the post for which to retrieve comments.
  *     responses:
  *       '200':
- *         description: Comments retrieved successfully.
+ *         description: A list of comments was retrieved successfully.
  *         content:
  *           application/json:
  *             schema:
@@ -42,50 +114,57 @@ router.delete('/:commentId', [authMiddleware], deleteById);
  *               properties:
  *                 message:
  *                   type: string
- *                   description: A success message indicating comments were retrieved.
+ *                   description: A success message indicating the comments were retrieved.
  *                 comments:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/comment'
+ *                     $ref: '#/components/schemas/Comment'
  *       '404':
  *         description: Not found - No comments found based on the search criteria.
  *       '405':
- *         description: Invalid data - Missing or invalid query parameters.
+ *         description: Method not allowed - Invalid data provided.
  *       '500':
  *         description: Server error.
- *
+ */
+
+/**
+ * @swagger
+ * /comment:
  *   delete:
- *     summary: Delete multiple comments based on query parameters.
+ *     summary: Delete multiple comments.
  *     description: Delete multiple comments based on search criteria.
  *     tags:
- *       - Comment
+ *       - Comments
  *     parameters:
  *       - in: query
  *         name: authorId
  *         schema:
  *           type: string
- *         description: Optional. The ID of the comment author.
+ *         description: The ID of the comment author.
  *       - in: query
  *         name: postId
  *         schema:
  *           type: string
- *         description: Optional. The ID of the post to delete comments for.
+ *         description: The ID of the post for which to delete comments.
  *     responses:
  *       '200':
- *         description: Comments deleted successfully.
+ *         description: The comments were deleted successfully.
  *       '404':
- *         description: Not found - No comments found based on the search criteria or missing parameters.
+ *         description: Not found - No comments found based on the search criteria.
  *       '405':
- *         description: Invalid data - Missing or invalid query parameters.
+ *         description: Method not allowed - Invalid data provided.
  *       '500':
  *         description: Server error.
- *
+ */
+
+/**
+ * @swagger
  * /comment/{commentId}:
  *   delete:
  *     summary: Delete a comment by ID.
  *     description: Delete a comment by its ID.
  *     tags:
- *       - Comment
+ *       - Comments
  *     parameters:
  *       - in: path
  *         name: commentId
@@ -98,45 +177,6 @@ router.delete('/:commentId', [authMiddleware], deleteById);
  *         description: The comment was deleted successfully.
  *       '404':
  *         description: Not found - Comment with the provided ID does not exist.
- *       '500':
- *         description: Server error.
- *
- * /comment/{postId}:
- *   post:
- *     summary: Create a new comment for a post.
- *     description: Create a new comment for a post with the provided post ID.
- *     tags:
- *       - Comment
- *     parameters:
- *       - in: path
- *         name: postId
- *         schema:
- *           type: string
- *         required: true
- *         description: The ID of the post to create a comment for.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/comment'
- *     responses:
- *       '201':
- *         description: The comment was created successfully.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 comment:
- *                   $ref: '#/components/schemas/comment'
- *                 success:
- *                   type: string
- *                   description: A success message indicating the comment was created.
- *       '404':
- *         description: Not found - Post with the provided ID does not exist.
- *       '405':
- *         description: Bad request - Invalid or empty comment data.
  *       '500':
  *         description: Server error.
  */
