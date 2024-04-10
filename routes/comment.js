@@ -3,30 +3,35 @@ const express = require('express');
 const authMiddleware = require('../middleware/auth');
 const roleMiddleware = require('../middleware/role');
 
-const { createComment, deleteComment, deleteCommentMany, getCommentManyByPostId } = require('../controllers/commetController');
+const { getCommentMany, deleteMany, createComment, deleteById, updateCommentById } = require('../controllers/commetController');
 
 const router = express.Router();
 
-router.get('/:postId', getCommentManyByPostId);
 router.post('/:postId', [authMiddleware], createComment);
-router.delete('/:id', [authMiddleware], deleteComment);
-router.delete('/all/:postId', [authMiddleware, roleMiddleware], deleteCommentMany);
+router.put('/:commentId', [authMiddleware], updateCommentById);
+router.get('/', getCommentMany);
+router.delete('/', [authMiddleware, roleMiddleware], deleteMany);
+router.delete('/:commentId', [authMiddleware], deleteById);
 
 /**
  * @swagger
- * /comment/{postId}:
+ * /comment:
  *   get:
- *     summary: Get comments by post ID.
- *     description: Retrieve comments for a post based on post ID.
+ *     summary: Get comments based on query parameters.
+ *     description: Retrieve comments based on search criteria.
  *     tags:
  *       - Comment
  *     parameters:
- *       - in: path
+ *       - in: query
+ *         name: authorId
+ *         schema:
+ *           type: string
+ *         description: Optional. The ID of the comment author.
+ *       - in: query
  *         name: postId
  *         schema:
  *           type: string
- *         required: true
- *         description: The ID of the post to retrieve comments for.
+ *         description: Optional. The ID of the post to retrieve comments for.
  *     responses:
  *       '200':
  *         description: Comments retrieved successfully.
@@ -43,10 +48,60 @@ router.delete('/all/:postId', [authMiddleware, roleMiddleware], deleteCommentMan
  *                   items:
  *                     $ref: '#/components/schemas/comment'
  *       '404':
- *         description: Not found - Post with the provided ID does not exist or no comments found.
+ *         description: Not found - No comments found based on the search criteria.
+ *       '405':
+ *         description: Invalid data - Missing or invalid query parameters.
  *       '500':
  *         description: Server error.
  *
+ *   delete:
+ *     summary: Delete multiple comments based on query parameters.
+ *     description: Delete multiple comments based on search criteria.
+ *     tags:
+ *       - Comment
+ *     parameters:
+ *       - in: query
+ *         name: authorId
+ *         schema:
+ *           type: string
+ *         description: Optional. The ID of the comment author.
+ *       - in: query
+ *         name: postId
+ *         schema:
+ *           type: string
+ *         description: Optional. The ID of the post to delete comments for.
+ *     responses:
+ *       '200':
+ *         description: Comments deleted successfully.
+ *       '404':
+ *         description: Not found - No comments found based on the search criteria or missing parameters.
+ *       '405':
+ *         description: Invalid data - Missing or invalid query parameters.
+ *       '500':
+ *         description: Server error.
+ *
+ * /comment/{commentId}:
+ *   delete:
+ *     summary: Delete a comment by ID.
+ *     description: Delete a comment by its ID.
+ *     tags:
+ *       - Comment
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the comment to delete.
+ *     responses:
+ *       '200':
+ *         description: The comment was deleted successfully.
+ *       '404':
+ *         description: Not found - Comment with the provided ID does not exist.
+ *       '500':
+ *         description: Server error.
+ *
+ * /comment/{postId}:
  *   post:
  *     summary: Create a new comment for a post.
  *     description: Create a new comment for a post with the provided post ID.
@@ -82,54 +137,6 @@ router.delete('/all/:postId', [authMiddleware, roleMiddleware], deleteCommentMan
  *         description: Not found - Post with the provided ID does not exist.
  *       '405':
  *         description: Bad request - Invalid or empty comment data.
- *       '500':
- *         description: Server error.
- */
-
-/**
- * @swagger
- * /comment/{id}:
- *   delete:
- *     summary: Delete a comment by ID.
- *     description: Delete a comment by its ID.
- *     tags:
- *       - Comment
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: The ID of the comment to delete.
- *     responses:
- *       '200':
- *         description: The comment was deleted successfully.
- *       '404':
- *         description: Not found - Comment with the provided ID does not exist.
- *       '500':
- *         description: Server error.
- */
-
-/**
- * @swagger
- * /comment/all/{postId}:
- *   delete:
- *     summary: Delete all comments for a post.
- *     description: Delete all comments associated with the provided post ID.
- *     tags:
- *       - Comment
- *     parameters:
- *       - in: path
- *         name: postId
- *         schema:
- *           type: string
- *         required: true
- *         description: The ID of the post to delete comments for.
- *     responses:
- *       '200':
- *         description: All comments for the post were deleted successfully.
- *       '404':
- *         description: Not found - Post with the provided ID does not exist or no comments to delete.
  *       '500':
  *         description: Server error.
  */

@@ -5,78 +5,30 @@ const { commentValidation } = require('../schemas');
 const { getCommentById } = require('../data/comment');
 const { getPostById } = require('../data/post');
 
-const getCommentManyByPostId = async (req, res) => {
-	const { postId } = req.params;
-
-	const existingPost = await getPostById(postId);
-
-	if (!existingPost) {
-		return res.status(404).json({ error: 'errorPostIsNotExist' });
-	}
-
-	try {
-		const comments = await db.comment.findMany({
-			where: {
-				postId
-			}
-		});
-
-		if (!comments || !comments.length) {
-			return res.status(404).json({ message: 'errorCommentIsNotExist' });
-		}
-
-		return res.status(200).json({ message: 'successCommets', comments });
-	} catch (error) {
-		return res.status(500).json({ error: 'errorComments' });
-	}
-};
-
 const createComment = async (req, res) => {
 	const { postId } = req.params;
 	const newComment = req.body;
 	const user = req.user;
 
-	if (!newComment) {
-		return res.status(405).json({ error: 'errorEmptyPost' });
-	}
-
 	const existingPost = await getPostById(postId);
 
 	if (!existingPost) {
 		return res.status(404).json({ error: 'errorPostIsNotExist' });
 	}
 
+	if (!newComment || !Object.keys(newComment).length) {
+		return res.status(405).json({ error: 'errorEmptyPost' });
+	}
+
 	try {
-		const validateData = commentValidation.commentSchema.parse(newComment);
+		const validatedData = await commentValidation.commentSchema.partial().strict().parseAsync(newComment);
 
 		const newCreatedComment = await db.comment.create({
 			data: {
-				...newComment,
+				...validatedData,
 				postId,
 				authorId: user.id,
 				authorName: user.name
-			}
-		});
-
-		await db.post.update({
-			where: {
-				id: postId
-			},
-			data: {
-				commentsCount: {
-					increment: 1
-				}
-			}
-		});
-
-		await db.user.update({
-			where: {
-				id: user.id
-			},
-			data: {
-				commentsCount: {
-					increment: 1
-				}
 			}
 		});
 
@@ -89,11 +41,85 @@ const createComment = async (req, res) => {
 	}
 };
 
-const deleteComment = async (req, res) => {
-	const { id } = req.params;
-	const user = req.user;
+const updateCommentById = async (req, res) => {
+	const { commentId } = req.params;
+	const updatedComment = req.body;
 
-	const existingComment = await getCommentById(id);
+	const existingComment = await getCommentById(commentId);
+
+	if (!existingComment) {
+		return res.status(404).json({ error: 'errorCommentIsNotExist' });
+	}
+
+	let currentTime = new Date();
+
+	currentTime.setMinutes(currentTime.getMinutes() - 10); // 24 hours
+
+	const commentCreatedAt = new Date(existingComment.createdAt);
+
+	if (commentCreatedAt.getTime() < currentTime.getTime()) {
+		return res.status(400).json({ error: 'errorCommentUpdateExpiredTime' });
+	}
+
+	try {
+		const validatedData = await commentValidation.commentSchema.partial().strict().parseAsync(updatedComment);
+
+		const newCreatedComment = await db.comment.update({
+			where: {
+				id: commentId
+			},
+			data: {
+				...validatedData
+			}
+		});
+
+		return res.status(201).json({ success: 'successCommentUpdated' });
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
+		}
+		return res.status(500).json({ error: 'errorCommentUpdate' });
+	}
+};
+
+const getCommentMany = async (req, res) => {
+	const { authorId, postId } = req.query;
+
+	if (postId) {
+		const existingPost = await getPostById(postId);
+
+		if (!existingPost) {
+			return res.status(404).json({ error: 'errorPostIsNotExist' });
+		}
+	}
+
+	if (authorId === '' || postId === '') {
+		return res.status(405).json({ error: 'errorInvalidData' });
+	}
+
+	try {
+		const comments = await db.comment.findMany({
+			where: {
+				postId,
+				authorId
+			}
+		});
+
+		if (!comments || !comments.length) {
+			return res.status(404).json({ message: 'errorCommentIsNotExist' });
+		}
+
+		return res.status(200).json({ message: 'successComment', comments });
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ error: 'errorComment' });
+	}
+};
+
+const deleteById = async (req, res) => {
+	const { commentId } = req.params;
+
+	const existingComment = await getCommentById(commentId);
 
 	if (!existingComment) {
 		return res.status(404).json({ error: 'errorCommentIsNotExist' });
@@ -102,22 +128,40 @@ const deleteComment = async (req, res) => {
 	try {
 		const deletedComment = await db.comment.delete({
 			where: {
-				id
+				id: commentId
 			}
 		});
 
-		await db.post.update({
+		return res.status(200).json({ message: 'successCommentDeleted' });
+	} catch (error) {
+		return res.status(500).json({ error: 'errorCommentDelete' });
+	}
+};
+
+const deleteMany = async (req, res) => {
+	const { authorId, postId } = req.query;
+
+	if (postId) {
+		const existingPost = await getPostById(postId);
+
+		if (!existingPost) {
+			return res.status(404).json({ error: 'errorPostIsNotExist' });
+		}
+	}
+
+	if (authorId === '' || postId === '') {
+		return res.status(405).json({ error: 'errorInvalidData' });
+	}
+
+	try {
+		const deletedComments = await db.comment.deleteMany({
 			where: {
-				id: existingComment.postId
-			},
-			data: {
-				commentsCount: {
-					decrement: 1
-				}
+				postId,
+				authorId
 			}
 		});
 
-		if (!deleteComment) {
+		if (!deletedComments || !deletedComments.length) {
 			return res.status(404).json({ error: 'errorCommentIsNotExist' });
 		}
 
@@ -128,31 +172,5 @@ const deleteComment = async (req, res) => {
 	}
 };
 
-const deleteCommentMany = async (req, res) => {
-	const { postId } = req.params;
-
-	const existingPost = await getPostById(postId);
-
-	if (!existingPost) {
-		return res.status(404).json({ error: 'errorPostIsNotExist' });
-	}
-
-	if (!existingPost.comments) {
-		return res.status(404).json({ error: 'errorPostHasNoComments' });
-	}
-
-	try {
-		await db.comment.deleteMany({
-			where: {
-				postId
-			}
-		});
-
-		return res.status(200).json({ success: 'successCommentsDeleted' });
-	} catch (error) {
-		return res.status(500).json({ error: 'errorCommentsDelete' });
-	}
-};
-
-module.exports = { createComment, deleteComment, deleteCommentMany, getCommentManyByPostId };
+module.exports = { getCommentMany, deleteMany, createComment, deleteById, updateCommentById };
 
