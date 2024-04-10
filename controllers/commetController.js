@@ -11,7 +11,7 @@ const getCommentManyByPostId = async (req, res) => {
 	const existingPost = await getPostById(postId);
 
 	if (!existingPost) {
-		return res.status(400).json({ error: 'errorPostIsNotExist' });
+		return res.status(404).json({ error: 'errorPostIsNotExist' });
 	}
 
 	try {
@@ -22,7 +22,7 @@ const getCommentManyByPostId = async (req, res) => {
 		});
 
 		if (!comments || !comments.length) {
-			return res.status(400).json({ message: 'errorCommentIsNotExist' });
+			return res.status(404).json({ message: 'errorCommentIsNotExist' });
 		}
 
 		return res.status(200).json({ message: 'successCommets', comments });
@@ -37,13 +37,13 @@ const createComment = async (req, res) => {
 	const user = req.user;
 
 	if (!newComment) {
-		return res.status(400).json({ error: 'errorEmptyPost' });
+		return res.status(405).json({ error: 'errorEmptyPost' });
 	}
 
 	const existingPost = await getPostById(postId);
 
 	if (!existingPost) {
-		return res.status(400).json({ error: 'errorPostIsNotExist' });
+		return res.status(404).json({ error: 'errorPostIsNotExist' });
 	}
 
 	try {
@@ -83,7 +83,7 @@ const createComment = async (req, res) => {
 		return res.status(201).json({ comment: newCreatedComment, success: 'successCommentCreated' });
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			return res.status(400).json({ error: 'errorInvalidData', details: error.errors });
+			return res.status(405).json({ error: 'errorInvalidData', details: error.errors });
 		}
 		return res.status(500).json({ error: 'errorCommentCreate' });
 	}
@@ -96,7 +96,7 @@ const deleteComment = async (req, res) => {
 	const existingComment = await getCommentById(id);
 
 	if (!existingComment) {
-		return res.status(400).json({ error: 'errorCommentIsNotExist' });
+		return res.status(404).json({ error: 'errorCommentIsNotExist' });
 	}
 
 	try {
@@ -118,7 +118,7 @@ const deleteComment = async (req, res) => {
 		});
 
 		if (!deleteComment) {
-			return res.status(400).json({ error: 'errorCommentIsNotExist' });
+			return res.status(404).json({ error: 'errorCommentIsNotExist' });
 		}
 
 		return res.status(200).json({ message: 'successCommentDeleted' });
@@ -134,11 +134,11 @@ const deleteCommentMany = async (req, res) => {
 	const existingPost = await getPostById(postId);
 
 	if (!existingPost) {
-		return res.status(400).json({ error: 'errorPostIsNotExist' });
+		return res.status(404).json({ error: 'errorPostIsNotExist' });
 	}
 
 	if (!existingPost.comments) {
-		return res.status(400).json({ error: 'errorPostHasNoComments' });
+		return res.status(404).json({ error: 'errorPostHasNoComments' });
 	}
 
 	try {
