@@ -19,12 +19,12 @@ const swaggerOptions = {
 		},
 		servers: [
 			{
-				url: 'http://localhost:3500/api',
-				description: 'Development Server'
-			},
-			{
 				url: 'https://blog-rest-server.vercel.app/api',
 				description: 'Production Server'
+			},
+			{
+				url: 'http://localhost:3500/api',
+				description: 'Development Server'
 			}
 		],
 		schemes: ['http', 'https'],
