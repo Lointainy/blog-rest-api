@@ -74,7 +74,7 @@ const swaggerOptions = {
 const optionDoc = {
 	customCss: `
 		.swagger-ui .topbar { display: none}
-		.opblock-summary-path-description-wrapper {display: flex; flex-wrap: wrap;}
+		.opblock-summary-path-description-wrapper {display: flex; flex-wrap: wrap; align-items: center;}
 		.swagger-ui .opblock .opblock-summary-path { max-width: fit-content; }
 		.swagger-ui .copy-to-clipboard {right: 0px; width: 32px;}
 		.swagger-ui .opblock .opblock-summary .view-line-link {top: 0px;}
