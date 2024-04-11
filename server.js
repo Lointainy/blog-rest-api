@@ -3,6 +3,7 @@ const cors = require('cors');
 const swaggerJSDoc = require('swagger-jsdoc');
 const swaggerUI = require('swagger-ui-express');
 const dotenv = require('dotenv');
+const prisma = require('./prisma');
 
 const connectDB = require('./config/connectDB');
 const { swaggerOptions, optionDoc } = require('./doc');
@@ -54,6 +55,7 @@ app.use('/api/like', require('./routes/like'));
 const startServer = async () => {
 	try {
 		await connectDB();
+		await prisma.$connect();
 		app.listen(PORT, () => {
 			console.log(`Server running on port ${PORT}`);
 		});

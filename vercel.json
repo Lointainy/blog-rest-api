@@ -4,7 +4,11 @@
 	"builds": [
 		{
 			"src": "server.js",
-			"use": "@vercel/node"
+			"use": "@vercel/node",
+			"config": {
+				"NODE_VERSION": "14",
+				"PRISMA_GENERATE": "true"
+			}
 		}
 	],
 	"routes": [
