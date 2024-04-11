@@ -5,7 +5,9 @@
 	"main": "server.js",
 	"scripts": {
 		"start": "node server.js",
-		"server": "nodemon server.js"
+		"server": "nodemon server.js",
+		"build": "prisma generate && node server.js",
+		"postinstall": "prisma generate"
 	},
 	"author": "Eugene Kozakov",
 	"license": "ISC",
@@ -29,3 +31,4 @@
 		"prisma": "^5.11.0"
 	}
 }
+
