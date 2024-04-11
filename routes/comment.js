@@ -33,14 +33,14 @@ router.delete('/:commentId', [authMiddleware], deleteById);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Comment'
+ *             $ref: '#/components/schemas/comment'
  *     responses:
  *       '201':
  *         description: A new comment was created successfully.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Comment'
+ *               $ref: '#/components/schemas/comment'
  *       '400':
  *         description: Bad request - Invalid or missing data.
  *       '404':
@@ -71,7 +71,7 @@ router.delete('/:commentId', [authMiddleware], deleteById);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Comment'
+ *             $ref: '#/components/schemas/comment'
  *     responses:
  *       '201':
  *         description: The comment was updated successfully.
@@ -118,7 +118,7 @@ router.delete('/:commentId', [authMiddleware], deleteById);
  *                 comments:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Comment'
+ *                     $ref: '#/components/schemas/comment'
  *       '404':
  *         description: Not found - No comments found based on the search criteria.
  *       '405':
