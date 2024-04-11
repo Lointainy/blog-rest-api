@@ -73,7 +73,7 @@ const swaggerOptions = {
 
 const optionDoc = {
 	customCss:
-		'.swagger-ui .topbar { display: none} .opblock-summary-path-description-wrapper {display: flex; max-width: none; flex-wrap: wrap;} .swagger-ui .opblock .opblock-summary-path { max-width: 100%; }',
+		'.swagger-ui .topbar { display: none} .opblock-summary-path-description-wrapper {display: flex; max-width: none; flex-wrap: wrap;} .swagger-ui .opblock .opblock-summary-path { max-width: 100%; } .swagger-ui .opblock .opblock-summary:hover .view-line-link {width: 32px;} .swagger-ui .copy-to-clipboard {right: 0px;}',
 	customSiteTitle: 'Blog API',
 	customSiteFavicon: '',
 	customCssUrl: CSS_URL
