@@ -16,7 +16,6 @@
 
 ###### Built with
 
-- [Vite](https://vitejs.dev/) - module bundler
 - [Node](https://nodejs.org/en/docs/) - library
 - [express](https://expressjs.com/) - framework for nodeJs
 - [MongoDB](https://www.mongodb.com/docs/manual/) - database
