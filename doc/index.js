@@ -73,7 +73,7 @@ const swaggerOptions = {
 
 const optionDoc = {
 	customCss:
-		'.swagger-ui .topbar { display: none}; .swagger-ui .opblock .opblock-summary-path-description-wrapper { align-items: center; display: flex; flex-wrap: wrap; gap: 0 10px; padding: 0 10px; width: 100%; }',
+		'.swagger-ui .topbar { display: none} .opblock-summary-path-description-wrapper {display: flex; max-width: none; flex-wrap: wrap;}',
 	customSiteTitle: 'Blog API',
 	customSiteFavicon: '',
 	customCssUrl: CSS_URL
